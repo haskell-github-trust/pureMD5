@@ -5,7 +5,7 @@
 -- Maintainer  : Thomas.DuBuisson@mail.google.com
 -- Stability   : experimental
 -- Portability : portable, requires bang patterns and ByteString
--- Tested with : GHC-6.8.020070914
+-- Tested with : GHC-6.8.1
 --
 
 module Main
@@ -81,17 +81,16 @@ md5Finalize !ctx@(MD5Ctx (MD5Par a b c d) rem !totLen) =
 md5Update :: MD5Context -> L.ByteString -> MD5Context
 md5Update ctx bsLazy =
 	let bs = L.toChunks bsLazy
-	    (blks,rem) = block bsLazy	-- bs
-	    newCtx = foldl' performMD5Update ctx blks
-	in newCtx { mdLeftOver = rem }
+	    blks = block bsLazy
+	in foldl' performMD5Update ctx blks
 
-block :: L.ByteString -> ([ByteString],ByteString)
-block bs =
-	let (blk,rest) = L.splitAt blockSizeBytesW64 bs
-	    (blks,rem) = block rest
-	in if L.length blk < blockSizeBytesW64
-		then ([],(B.concat . L.toChunks) blk)
-		else ((B.concat . L.toChunks) blk : blks, rem)
+block :: L.ByteString -> [ByteString]
+block bs = 
+	case L.toChunks bs of
+		[]		-> []
+		otherwise 	-> (B.concat . L.toChunks) top : block rest
+	where
+	(top,rest) = L.splitAt blockSizeBytesW64 bs
 {-# INLINE block #-}
 
 -- Assumes ByteString length == blockSizeBytes, will fold the 
@@ -99,11 +98,13 @@ block bs =
 performMD5Update :: MD5Context -> ByteString -> MD5Context
 performMD5Update !ctx@(MD5Ctx !par@(MD5Par !a !b !c !d) _ !len) bs =
 	let MD5Par a' b' c' d' = applyMD5Rounds par bs
-	in MD5Ctx {
-		mdPartial = MD5Par (a' + a) (b' + b) (c' + c) (d' + d),
-		mdLeftOver = B.empty,
-		mdTotalLen = len + blockSizeBits
-		}
+	in if B.length bs == blockSizeBytes
+		then MD5Ctx {
+			mdPartial = MD5Par (a' + a) (b' + b) (c' + c) (d' + d),
+			mdLeftOver = B.empty,
+			mdTotalLen = len + blockSizeBits
+			}
+		else ctx { mdLeftOver = bs } 
 
 applyMD5Rounds :: MD5Partial -> ByteString -> MD5Partial
 applyMD5Rounds par@(MD5Par a b c d) w =
