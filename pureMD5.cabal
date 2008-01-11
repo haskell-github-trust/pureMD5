@@ -1,0 +1,20 @@
+name:		pureMD5
+version:	0.1.0
+license:	BSD3
+license-file:	LICENSE
+author:		Thomas DuBuisson <thomas.dubuisosn@gmail.com>
+maintainer:	Thomas DuBuisson
+homepage:	None
+description:	A rolled (concise yet inefficient) and unrolled (more efficient, much less concise)
+		version of MD5 purely in Haskell.
+synopsis:	MD5 implementations that should become part of a ByteString crypto package.
+category:	Data, Codes
+stability:	stable
+build-type:	Simple
+cabal-version:	>= 1.2
+tested-with:	GHC ==6.8.1
+
+build-depends:	base, bytestring >= 0.9, binary >= 0.4.0
+hs-source-dirs:	src
+exposed-modules: MD5
+ghc-options:	-O2 -funfolding-use-threshold66 -funfolding-creation-threshold66 -funfolding-update-in-place -fvia-c -optc -funroll-all-loops -optc-ffast-math -fexcess-precision
