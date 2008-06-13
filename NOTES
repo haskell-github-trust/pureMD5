@@ -1,3 +1,1 @@
-pureMD5 rolled version (MD5.Rolled) is around just for historical purposes,
-but if you want a real challange then try to make a compiler that will compile
-the rolled version to run as fast as the unrolled version.
+The MD5 Rolled is no longer being distributed, but it lives on in the old packages on hackage and on the darcs repo.
