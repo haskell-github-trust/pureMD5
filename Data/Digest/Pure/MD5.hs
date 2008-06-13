@@ -56,6 +56,7 @@ blockSizeBytesI64 = (fromIntegral blockSizeBytes) :: Int64
 blockSizeBits = (fromIntegral blockSize) :: Word64
 
 data MD5Partial = MD5Par !Word32 !Word32 !Word32 !Word32
+    deriving (Ord, Eq)
 
 -- | The type for intermediate and final results.
 data MD5Context = MD5Ctx { mdPartial  :: !MD5Partial,
@@ -76,7 +77,7 @@ h3 = 0x10325476
 
 -- | Processes a lazy ByteString and returns the md5 digest.
 --   This is probably what you want.
-md5 :: L.ByteString -> MD5Context
+md5 :: L.ByteString -> MD5Digest
 md5 bs = md5Finalize $ md5Update md5InitialContext bs
 
 -- | Closes an MD5 context, thus producing the digest.
@@ -242,7 +243,7 @@ instance Binary MD5Digest where
     put (MD5Digest (MD5Ctx p _ _)) = put p
     get = do
         p <- get
-        return $ MD5Digest $ MD5Ctx p L.empty 0
+        return $ MD5Digest $ MD5Ctx p B.empty 0
 
 instance Ord MD5Digest where
     compare (MD5Digest (MD5Ctx a _ _)) (MD5Digest (MD5Ctx b _ _)) = compare a b
@@ -274,4 +275,3 @@ instance Binary MD5Partial where
                  c <- getWord32be
                  d <- getWord32be
                  return $ MD5Par a b c d
-
