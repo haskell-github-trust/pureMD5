@@ -22,6 +22,6 @@ Library
     Build-Depends: base >= 3, bytestring >= 0.9, binary >= 0.4.0
   else
     Build-Depends: base >= 3, bytestring, binary >= 0.4.0
-  hs-source-dirs:	src
+  hs-source-dirs:
   exposed-modules: Data.Digest.Pure.MD5
   ghc-options:	-O2 -funfolding-use-threshold66 -funfolding-creation-threshold66 -fvia-C -optc-funroll-all-loops -optc-ffast-math -fexcess-precision -funbox-strict-fields
