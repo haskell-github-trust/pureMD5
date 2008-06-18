@@ -19,8 +19,9 @@
 -----------------------------------------------------------------------------
 
 module Data.Digest.Pure.MD5
-	-- * Types
-        ( MD5Context
+	(
+        -- * Types
+         MD5Context
         , MD5Digest
         -- * Static data
         , md5InitialContext
