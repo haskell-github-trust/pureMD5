@@ -8,7 +8,7 @@
 -- Portability : portable, requires bang patterns and ByteString
 -- Tested with : GHC-6.8.1
 --
--- To get an MD5 digest of a lazy ByteString (you probably want this):
+-- |To get an MD5 digest of a lazy ByteString (you probably want this):
 --   hash = md5 lazyByteString
 --
 -- Alternativly, for a context that can be further updated/finalized:
