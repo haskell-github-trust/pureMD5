@@ -99,32 +99,31 @@ md5Finalize !ctx@(MD5Ctx (MD5Par a b c d) rem !totLen) =
 -- | Alters the MD5Context with a partial digest of the data.
 md5Update :: MD5Context -> L.ByteString -> MD5Context
 md5Update !ctx@(MD5Ctx _ !leftover _) bsLazy =
-        let bs = L.fromChunks (leftover:L.toChunks bsLazy)
-	    blks = block bs
-        in foldl' performMD5Update ctx blks
+    let bs = L.fromChunks (leftover:L.toChunks bsLazy)
+    in blockAndDo ctx bs --foldl' performMD5Update ctx blks
 
-block :: L.ByteString -> [ByteString]
-block bs =
-        if rest /= L.empty
-                then (conv top) : (block rest)
-                else [conv top]
-        where
-        conv = B.concat . L.toChunks
-        (top,rest) = L.splitAt blockSizeBytesI64 bs
-{-# INLINE block #-}
+blockAndDo :: MD5Context -> L.ByteString -> MD5Context
+blockAndDo !ctx bs =
+    if B.length blk == blockSizeBytes
+        then let !newCtx = performMD5Update ctx blk
+             in blockAndDo newCtx rest
+        else ctx { mdLeftOver = blk }
+  where
+  blk = B.concat $ L.toChunks top
+  (top,rest) = L.splitAt blockSizeBytesI64 bs
+{-# INLINE blockAndDo #-}
 
 -- Assumes ByteString length == blockSizeBytes, will fold the 
 -- context across calls to applyMD5Rounds.
 performMD5Update :: MD5Context -> ByteString -> MD5Context
 performMD5Update !ctx@(MD5Ctx !par@(MD5Par !a !b !c !d) _ !len) !bs =
         let MD5Par a' b' c' d' = applyMD5Rounds par bs
-        in if B.length bs == blockSizeBytes
-                then MD5Ctx {
+        in MD5Ctx {
                         mdPartial = MD5Par (a' + a) (b' + b) (c' + c) (d' + d),
                         mdLeftOver = B.empty,
                         mdTotalLen = len + blockSizeBits
                         }
-                else ctx { mdLeftOver = bs } 
+{-# INLINE performMD5Update #-}
 
 applyMD5Rounds :: MD5Partial -> ByteString -> MD5Partial
 applyMD5Rounds par@(MD5Par a b c d) w =
