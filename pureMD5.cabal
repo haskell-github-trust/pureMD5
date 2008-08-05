@@ -1,5 +1,5 @@
 name:		pureMD5
-version:	0.2.3
+version:	0.2.4
 license:	BSD3
 license-file:	LICENSE
 author:		Thomas DuBuisson <thomas.dubuisson@gmail.com>
@@ -10,7 +10,7 @@ category:	Data, Cryptography
 stability:	stable
 build-type:	Simple
 cabal-version:	>= 1.2
-tested-with:	GHC == 6.8.2
+tested-with:	GHC == 6.8.3
 extra-source-files: Test/MD5.hs Test/md5test.hs
 
 Flag small_base
@@ -23,4 +23,4 @@ Library
     Build-Depends: base >= 3, bytestring, binary >= 0.4.0
   hs-source-dirs:
   exposed-modules: Data.Digest.Pure.MD5
-  ghc-options:	-O2 -funfolding-use-threshold66 -funfolding-creation-threshold66 -fvia-C -optc-funroll-all-loops -optc-ffast-math -fexcess-precision -funbox-strict-fields
+  ghc-options:	-O2 -funfolding-use-threshold66 -funfolding-creation-threshold66 -fexcess-precision -funbox-strict-fields
