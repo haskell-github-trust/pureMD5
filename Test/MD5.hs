@@ -4,6 +4,7 @@ module Test.MD5 where
 import Test.QuickCheck
 import Data.Digest.Pure.MD5
 import qualified Data.ByteString.Lazy as L
+import qualified Data.ByteString as S
 import Control.Monad (forM)
 import Data.Word (Word8)
 import Data.Binary
@@ -11,11 +12,17 @@ import Data.Binary
 instance Arbitrary Word8 where
     arbitrary = (arbitrary :: Gen Int) >>= return . fromIntegral
 
+instance Arbitrary S.ByteString where
+    arbitrary = do
+        len <- choose (0,4096) :: Gen Int
+        words <- forM [0..len] (\_ -> arbitrary)
+        return $ S.pack words
+
 instance Arbitrary L.ByteString where
     arbitrary = do
-        len <- choose (0,10000) :: Gen Int
-        words <- forM [0..len] (\_ -> arbitrary)
-        return $ L.pack words
+        len <- choose (0,1000) :: Gen Int
+        chunks <- vector len
+        return $ L.fromChunks chunks
 
 prop_PartsEqWhole lps =
     let lpsChunks   = map (L.fromChunks . (:[])) (L.toChunks lps)

@@ -1,9 +1,9 @@
-{-# OPTIONS_GHC -XBangPatterns #-}
+{-# LANGUAGE BangPatterns, ForeignFunctionInterface #-}
 -----------------------------------------------------------------------------
 --
--- Module      : Data.Digest.MD5
+-- Module      : Data.Digest.Pure.MD5
 -- License     : BSD3
--- Maintainer  : Thomas.DuBuisson@mail.google.com
+-- Maintainer  : Thomas.DuBuisson@gmail.com
 -- Stability   : experimental
 -- Portability : portable, requires bang patterns and ByteString
 -- Tested with : GHC-6.8.1
@@ -56,17 +56,18 @@ blockSizeBytes = blockSize `div` 8
 blockSizeBytesI64 = (fromIntegral blockSizeBytes) :: Int64
 blockSizeBits = (fromIntegral blockSize) :: Word64
 
+-- | The type for intermediate results (from md5Update)
 data MD5Partial = MD5Par !Word32 !Word32 !Word32 !Word32
     deriving (Ord, Eq)
 
--- | The type for intermediate and final results.
+-- | The type for final results.
 data MD5Context = MD5Ctx { mdPartial  :: !MD5Partial,
-                           mdLeftOver :: ByteString,
+                           mdLeftOver :: !ByteString,
                            mdTotalLen :: !Word64 }
 
 -- |After finalizing a context, using md5Finalize, a new type
 -- is returned to prevent 're-finalizing' the structure.
-newtype MD5Digest = MD5Digest MD5Context
+newtype MD5Digest = MD5Digest !MD5Context
 
 -- | The initial context to use when calling md5Update for the first time
 md5InitialContext :: MD5Context
@@ -116,7 +117,7 @@ blockAndDo !ctx bs =
 -- Assumes ByteString length == blockSizeBytes, will fold the 
 -- context across calls to applyMD5Rounds.
 performMD5Update :: MD5Context -> ByteString -> MD5Context
-performMD5Update !ctx@(MD5Ctx !par@(MD5Par !a !b !c !d) _ !len) !bs =
+performMD5Update !ctx@(MD5Ctx !par@(MD5Par !a !b !c !d) _ !len) !bs = {-# SCC "performMD5Update" #-}
         let MD5Par a' b' c' d' = applyMD5Rounds par bs
         in MD5Ctx {
                         mdPartial = MD5Par (a' + a) (b' + b) (c' + c) (d' + d),
@@ -126,7 +127,7 @@ performMD5Update !ctx@(MD5Ctx !par@(MD5Par !a !b !c !d) _ !len) !bs =
 {-# INLINE performMD5Update #-}
 
 applyMD5Rounds :: MD5Partial -> ByteString -> MD5Partial
-applyMD5Rounds par@(MD5Par a b c d) w =
+applyMD5Rounds par@(MD5Par a b c d) w = {-# SCC "applyMD5Rounds" #-}
         let -- Round 1
             !r0  = ff  a  b  c  d   (w!!0)  7  3614090360
             !r1  = ff  d r0  b  c   (w!!1)  12 3905402710
@@ -205,22 +206,22 @@ applyMD5Rounds par@(MD5Par a b c d) w =
         {-# INLINE h #-}
         i !x !y !z = y `xor` (x .|. (complement z))
         {-# INLINE i #-}
-        ff a b c d x s ac =
+        ff a b c d !x s ac = {-# SCC "ff" #-}
                 let !a' = f b c d + x + ac + a
                     !a'' = rotateL a' s
                 in a'' + b
         {-# INLINE ff #-}
-        gg a b c d x s ac =
+        gg a b c d !x s ac = {-# SCC "gg" #-}
                 let !a' = g b c d + x + ac + a
                     !a'' = rotateL a' s
                 in a'' + b
         {-# INLINE gg #-}
-        hh a b c d x s ac =
+        hh a b c d !x s ac = {-# SCC "hh" #-}
                 let !a' = h b c d + x + ac + a
                     !a'' = rotateL a' s
                     in a'' + b
         {-# INLINE hh #-}
-        ii a b c d  x s ac =
+        ii a b c d  !x s ac = {-# SCC "ii" #-}
                 let !a' = i b c d + x + ac + a
                     !a'' = rotateL a' s
                 in a'' + b
@@ -269,9 +270,9 @@ instance Binary MD5Context where
                  return $ MD5Ctx p r l
 
 instance Binary MD5Partial where
-        put (MD5Par a b c d) = putWord32be a >> putWord32be b >> putWord32be c >> putWord32be d
-        get = do a <- getWord32be
-                 b <- getWord32be
-                 c <- getWord32be
-                 d <- getWord32be
+        put (MD5Par a b c d) = putWord32le a >> putWord32le b >> putWord32le c >> putWord32le d
+        get = do a <- getWord32le
+                 b <- getWord32le
+                 c <- getWord32le
+                 d <- getWord32le
                  return $ MD5Par a b c d
