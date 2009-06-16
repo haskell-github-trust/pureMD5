@@ -67,7 +67,7 @@ data MD5Context = MD5Ctx { mdPartial  :: !MD5Partial,
 
 -- |After finalizing a context, using md5Finalize, a new type
 -- is returned to prevent 're-finalizing' the structure.
-newtype MD5Digest = MD5Digest !MD5Context
+newtype MD5Digest = MD5Digest MD5Context
 
 -- | The initial context to use when calling md5Update for the first time
 md5InitialContext :: MD5Context

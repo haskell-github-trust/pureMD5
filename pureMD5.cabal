@@ -1,5 +1,5 @@
 name:		pureMD5
-version:	0.2.4
+version:	1.0.0.0
 license:	BSD3
 license-file:	LICENSE
 author:		Thomas DuBuisson <thomas.dubuisson@gmail.com>
@@ -10,7 +10,7 @@ category:	Data, Cryptography
 stability:	stable
 build-type:	Simple
 cabal-version:	>= 1.2
-tested-with:	GHC == 6.8.3
+tested-with:	GHC == 6.10.1
 extra-source-files: Test/MD5.hs Test/md5test.hs
 
 Flag small_base
