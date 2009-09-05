@@ -21,7 +21,7 @@
 module Data.Digest.Pure.MD5
 	(
         -- * Types
-         MD5Context
+          MD5Context
         , MD5Digest
         -- * Static data
         , md5InitialContext
@@ -67,7 +67,7 @@ data MD5Context = MD5Ctx { mdPartial  :: !MD5Partial,
 
 -- |After finalizing a context, using md5Finalize, a new type
 -- is returned to prevent 're-finalizing' the structure.
-newtype MD5Digest = MD5Digest MD5Context
+data MD5Digest = MD5Digest MD5Partial deriving (Eq, Ord)
 
 -- | The initial context to use when calling md5Update for the first time
 md5InitialContext :: MD5Context
@@ -90,7 +90,7 @@ md5Finalize !ctx@(MD5Ctx (MD5Par a b c d) rem !totLen) =
                         putWord8 0x80
                         mapM_ putWord8 (replicate lenZeroPad 0)
                         putWord64le totLen' )
-        in MD5Digest $ md5Update ctx (L.fromChunks padBS)
+        in MD5Digest $ mdPartial $ md5Update ctx (L.fromChunks padBS)
     where
     l = B.length rem
     lenZeroPad = if (l + 1) <= blockSizeBytes - 8
@@ -241,19 +241,13 @@ instance Show MD5Digest where
     show (MD5Digest h) = show h
 
 instance Binary MD5Digest where
-    put (MD5Digest (MD5Ctx p _ _)) = put p
+    put (MD5Digest p) = put p
     get = do
         p <- get
-        return $ MD5Digest $ MD5Ctx p B.empty 0
+        return $ MD5Digest p
 
-instance Ord MD5Digest where
-    compare (MD5Digest (MD5Ctx a _ _)) (MD5Digest (MD5Ctx b _ _)) = compare a b
-
-instance Eq MD5Digest where
-    (MD5Digest (MD5Ctx a _ _)) == (MD5Digest (MD5Ctx b _ _)) = a == b
-
-instance Show MD5Context where
-  show (MD5Ctx (MD5Par a b c d) _ _) = 
+instance Show MD5Partial where
+  show (MD5Par a b c d) = 
     let bs = runPut $ putWord32be d >> putWord32be c >> putWord32be b >> putWord32be a
     in foldl' (\str w -> let c = showHex w str
                          in if length c < length str + 2
