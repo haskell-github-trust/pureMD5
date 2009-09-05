@@ -20,7 +20,7 @@ instance Arbitrary S.ByteString where
 
 instance Arbitrary L.ByteString where
     arbitrary = do
-        len <- choose (0,1000) :: Gen Int
+        len <- choose (0,10) :: Gen Int
         chunks <- vector len
         return $ L.fromChunks chunks
 
