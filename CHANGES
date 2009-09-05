@@ -1,0 +1,2 @@
+1.0.0.2
+* Fixed alignement issue for non-x86 systems - this costs 5% performance on x86 but is needed for PPC and the like.
