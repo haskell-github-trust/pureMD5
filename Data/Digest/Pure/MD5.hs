@@ -110,7 +110,8 @@ blockAndDo !ctx bs =
              in blockAndDo newCtx rest
         else ctx { mdLeftOver = blk }
   where
-  blk = B.concat $ L.toChunks top
+  blk = if isAligned blk' then blk' else B.copy blk'
+  blk' = B.concat $ L.toChunks top
   (top,rest) = L.splitAt blockSizeBytesI64 bs
 {-# INLINE blockAndDo #-}
 
@@ -118,20 +119,21 @@ blockAndDo !ctx bs =
 -- context across calls to applyMD5Rounds.
 performMD5Update :: MD5Context -> ByteString -> MD5Context
 performMD5Update !ctx@(MD5Ctx !par@(MD5Par !a !b !c !d) _ !len) !bs = {-# SCC "performMD5Update" #-}
-        let MD5Par a' b' c' d' = if isAligned bs
+        let MD5Par a' b' c' d' = {- if isAligned bs
                                     then applyMD5Rounds par bs getAlignedNthWord
-                                    else applyMD5Rounds par bs getUnalignedNthWord
+                                    else applyMD5Rounds par bs getUnalignedNthWord -}
+                                    applyMD5Rounds par bs
         in MD5Ctx {
                         mdPartial = MD5Par (a' + a) (b' + b) (c' + c) (d' + d),
                         mdLeftOver = B.empty,
                         mdTotalLen = len + blockSizeBits
                         }
-  where
-  isAligned (PS _ off _) = off `rem` 4 == 0
 {-# INLINE performMD5Update #-}
 
-applyMD5Rounds :: MD5Partial -> ByteString -> (Int -> ByteString -> Word32) -> MD5Partial
-applyMD5Rounds par@(MD5Par a b c d) w getNthWord = {-# SCC "applyMD5Rounds" #-}
+isAligned (PS _ off _) = off `rem` 4 == 0
+
+applyMD5Rounds :: MD5Partial -> ByteString -> MD5Partial
+applyMD5Rounds par@(MD5Par a b c d) w = {-# SCC "applyMD5Rounds" #-}
         let -- Round 1
             !r0  = ff  a  b  c  d   (w!!0)  7  3614090360
             !r1  = ff  d r0  b  c   (w!!1)  12 3905402710
@@ -234,24 +236,11 @@ applyMD5Rounds par@(MD5Par a b c d) w getNthWord = {-# SCC "applyMD5Rounds" #-}
         {-# INLINE (!!) #-}
 {-# INLINE applyMD5Rounds #-}
 
--- getAlignedNthWord :: Word32 -> ByteString -> Word32
-getAlignedNthWord n bs@(PS ptr off len) =
+getNthWord n bs@(PS ptr off len) =
         inlinePerformIO $ withForeignPtr ptr $ \ptr' -> do
         let p = castPtr $ plusPtr ptr' off
         peekElemOff p n
-{-# INLINE getAlignedNthWord #-}
-
--- getUnalignedNthWord :: Word32 -> ByteString -> Word32
-getUnalignedNthWord n bs@(PS ptr off len) =
-        inlinePerformIO $ withForeignPtr ptr $ \ptr' -> do
-        let p = castPtr $ plusPtr ptr' (off + n*4) :: Ptr Word8
-        w1 <- peekElemOff p 0
-        w2 <- peekElemOff p 1
-        w3 <- peekElemOff p 2
-        w4 <- peekElemOff p 3
-        let y = (w4 .<. 24 .|. w3 .<. 16 .|. w2 .<.8 .|. fromIntegral w1)
-        return y
-{-# INLINE getUnalignedNthWord #-}
+{-# INLINE getNthWord #-}
 
 infix 9 .<.
 (.<.) :: Word8 -> Int -> Word32
