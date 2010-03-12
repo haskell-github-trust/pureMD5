@@ -46,7 +46,11 @@ import System.IO
 import Data.Binary
 import Data.Binary.Get
 import Data.Binary.Put
+import qualified Data.Serialize.Get as G
+import qualified Data.Serialize.Put as P
+import qualified Data.Serialize as S
 import Numeric
+import Data.Array.CArray
 
 -- | Block size in bits
 blockSize :: Int
@@ -236,10 +240,12 @@ applyMD5Rounds par@(MD5Par a b c d) w = {-# SCC "applyMD5Rounds" #-}
         {-# INLINE (!!) #-}
 {-# INLINE applyMD5Rounds #-}
 
-getNthWord n bs@(PS ptr off len) =
-        inlinePerformIO $ withForeignPtr ptr $ \ptr' -> do
-        let p = castPtr $ plusPtr ptr' off
-        peekElemOff p n
+getNthWord :: Int -> B.ByteString -> Word32
+getNthWord n = right . G.runGet (do
+                G.uncheckedSkip (n * sizeOf (undefined :: Word32))
+                G.getWord32le)
+  where
+  right x = case x of Right y -> y
 {-# INLINE getNthWord #-}
 
 infix 9 .<.
@@ -251,12 +257,6 @@ infix 9 .<.
 instance Show MD5Digest where
     show (MD5Digest h) = show h
 
-instance Binary MD5Digest where
-    put (MD5Digest p) = put p
-    get = do
-        p <- get
-        return $ MD5Digest p
-
 instance Show MD5Partial where
   show (MD5Par a b c d) = 
     let bs = runPut $ putWord32be d >> putWord32be c >> putWord32be b >> putWord32be a
@@ -264,6 +264,12 @@ instance Show MD5Partial where
                          in if length c < length str + 2
                                  then '0':c
                                 else c) "" (L.unpack bs)
+
+instance Binary MD5Digest where
+    put (MD5Digest p) = put p
+    get = do
+        p <- get
+        return $ MD5Digest p
 
 instance Binary MD5Context where
         put (MD5Ctx p r l) = put p >> putWord8 (fromIntegral (B.length r)) >> 
@@ -281,3 +287,26 @@ instance Binary MD5Partial where
                  c <- getWord32le
                  d <- getWord32le
                  return $ MD5Par a b c d
+
+instance S.Serialize MD5Digest where
+    put (MD5Digest p) = S.put p
+    get = do
+        p <- S.get
+        return $ MD5Digest p
+
+instance S.Serialize MD5Context where
+        put (MD5Ctx p r l) = S.put p >> P.putWord8 (fromIntegral (B.length r)) >>
+                             P.putByteString r >> P.putWord64be l
+        get = do p <- S.get
+                 s <- G.getWord8
+                 r <- G.getByteString (fromIntegral s)
+                 l <- G.getWord64be
+                 return $ MD5Ctx p r l
+
+instance S.Serialize MD5Partial where
+	put (MD5Par a b c d) = P.putWord32le a >> P.putWord32le b >> P.putWord32le c >> P.putWord32le d
+	get = do a <- G.getWord32le
+		 b <- G.getWord32le
+		 c <- G.getWord32le
+		 d <- G.getWord32le
+		 return $ MD5Par a b c d
