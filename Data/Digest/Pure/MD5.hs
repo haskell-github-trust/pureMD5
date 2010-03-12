@@ -50,7 +50,6 @@ import qualified Data.Serialize.Get as G
 import qualified Data.Serialize.Put as P
 import qualified Data.Serialize as S
 import Numeric
-import Data.Array.CArray
 
 -- | Block size in bits
 blockSize :: Int
@@ -123,10 +122,7 @@ blockAndDo !ctx bs =
 -- context across calls to applyMD5Rounds.
 performMD5Update :: MD5Context -> ByteString -> MD5Context
 performMD5Update !ctx@(MD5Ctx !par@(MD5Par !a !b !c !d) _ !len) !bs = {-# SCC "performMD5Update" #-}
-        let MD5Par a' b' c' d' = {- if isAligned bs
-                                    then applyMD5Rounds par bs getAlignedNthWord
-                                    else applyMD5Rounds par bs getUnalignedNthWord -}
-                                    applyMD5Rounds par bs
+        let MD5Par a' b' c' d' = applyMD5Rounds par bs
         in MD5Ctx {
                         mdPartial = MD5Par (a' + a) (b' + b) (c' + c) (d' + d),
                         mdLeftOver = B.empty,
