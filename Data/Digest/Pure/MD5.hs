@@ -1,4 +1,4 @@
-{-# LANGUAGE BangPatterns, ForeignFunctionInterface #-}
+{-# LANGUAGE BangPatterns, ForeignFunctionInterface, MultiParamTypeClasses #-}
 -----------------------------------------------------------------------------
 --
 -- Module      : Data.Digest.Pure.MD5
@@ -49,15 +49,17 @@ import Data.Binary.Put
 import qualified Data.Serialize.Get as G
 import qualified Data.Serialize.Put as P
 import qualified Data.Serialize as S
+import Data.Crypto.Classes
+import Data.Tagged
 import Numeric
 
 -- | Block size in bits
-blockSize :: Int
-blockSize = 512
+md5BlockSize :: Int
+md5BlockSize = 512
 
-blockSizeBytes = blockSize `div` 8
+blockSizeBytes = md5BlockSize `div` 8
 blockSizeBytesI64 = (fromIntegral blockSizeBytes) :: Int64
-blockSizeBits = (fromIntegral blockSize) :: Word64
+blockSizeBits = (fromIntegral md5BlockSize) :: Word64
 
 -- | The type for intermediate results (from md5Update)
 data MD5Partial = MD5Par !Word32 !Word32 !Word32 !Word32
@@ -83,44 +85,42 @@ h3 = 0x10325476
 -- | Processes a lazy ByteString and returns the md5 digest.
 --   This is probably what you want.
 md5 :: L.ByteString -> MD5Digest
-md5 bs = md5Finalize $ md5Update md5InitialContext bs
+md5 = hash
 
 -- | Closes an MD5 context, thus producing the digest.
-md5Finalize :: MD5Context -> MD5Digest
-md5Finalize !ctx@(MD5Ctx (MD5Par a b c d) rem !totLen) =
+md5Finalize :: MD5Context -> B.ByteString -> MD5Digest
+md5Finalize !ctx@(MD5Ctx (MD5Par a b c d) remPrev !totLen) end =
         let totLen' = (totLen + 8*fromIntegral l) :: Word64
             padBS = L.toChunks $ runPut ( do
                         putWord8 0x80
                         mapM_ putWord8 (replicate lenZeroPad 0)
                         putWord64le totLen' )
-        in MD5Digest $ mdPartial $ md5Update ctx (L.fromChunks padBS)
+        in MD5Digest $ mdPartial $ md5Update ctx (B.concat padBS)
     where
+    rem = B.append remPrev end
     l = B.length rem
     lenZeroPad = if (l + 1) <= blockSizeBytes - 8
                      then (blockSizeBytes - 8) - (l + 1)
                      else (2 * blockSizeBytes - 8) - (l + 1)
 
 -- | Alters the MD5Context with a partial digest of the data.
-md5Update :: MD5Context -> L.ByteString -> MD5Context
-md5Update !ctx@(MD5Ctx _ !leftover _) bsLazy =
-    let bs = L.fromChunks (leftover:L.toChunks bsLazy)
-    in blockAndDo ctx bs --foldl' performMD5Update ctx blks
+md5Update :: MD5Context -> B.ByteString -> MD5Context
+md5Update !ctx@(MD5Ctx _ !leftover _) bs = blockAndDo ctx (B.append leftover bs)
 
-blockAndDo :: MD5Context -> L.ByteString -> MD5Context
+blockAndDo :: MD5Context -> B.ByteString -> MD5Context
 blockAndDo !ctx bs =
     if B.length blk == blockSizeBytes
         then let !newCtx = performMD5Update ctx blk
              in blockAndDo newCtx rest
         else ctx { mdLeftOver = blk }
   where
-  blk = if isAligned blk' then blk' else B.copy blk'
-  blk' = B.concat $ L.toChunks top
-  (top,rest) = L.splitAt blockSizeBytesI64 bs
+  blk = if isAligned top then top else B.copy top
+  (top,rest) = B.splitAt blockSizeBytes bs
 {-# INLINE blockAndDo #-}
 
 -- Assumes ByteString length == blockSizeBytes, will fold the 
 -- context across calls to applyMD5Rounds.
-performMD5Update :: MD5Context -> ByteString -> MD5Context
+performMD5Update :: MD5Context -> B.ByteString -> MD5Context
 performMD5Update !ctx@(MD5Ctx !par@(MD5Par !a !b !c !d) _ !len) !bs = {-# SCC "performMD5Update" #-}
         let MD5Par a' b' c' d' = applyMD5Rounds par bs
         in MD5Ctx {
@@ -306,3 +306,11 @@ instance S.Serialize MD5Partial where
 		 c <- G.getWord32le
 		 d <- G.getWord32le
 		 return $ MD5Par a b c d
+
+instance Hash MD5Context MD5Digest where
+	outputLength = Tagged 128
+	blockLength  = Tagged 512
+	initialCtx   = md5InitialContext
+	updateCtx    = md5Update
+	finalize     = md5Finalize
+	strength     = Tagged 24
