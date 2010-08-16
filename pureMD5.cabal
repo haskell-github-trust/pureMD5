@@ -4,13 +4,14 @@ license:	BSD3
 license-file:	LICENSE
 author:		Thomas DuBuisson <thomas.dubuisson@gmail.com>
 maintainer:	Thomas DuBuisson
-description:	An unrolled implementation of MD5 purely in Haskell.
-synopsis:	MD5 implementations that should become part of a ByteString Crypto package.
+description:	A Haskell-only implementation of the MD5 digest (hash) algorithm.  This now supports
+                the crypto-api class interface.
+synopsis:	A Haskell-only implementation of the MD5 digest (hash) algorithm.
 category:	Data, Cryptography
 stability:	stable
 build-type:	Simple
 cabal-version:	>= 1.6
-tested-with:	GHC == 6.10.1
+tested-with:	GHC == 6.12.1
 extra-source-files: Test/MD5.hs Test/md5test.hs
 
 Library
