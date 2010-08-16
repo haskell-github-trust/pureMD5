@@ -2,12 +2,17 @@
 module Test.MD5 where
 
 import Test.QuickCheck
+import Test.Crypto
 import Data.Digest.Pure.MD5
 import qualified Data.ByteString.Lazy as L
 import qualified Data.ByteString as S
 import Control.Monad (forM)
 import Data.Word (Word8)
 import Data.Binary
+
+test = runTests (makeMD5Tests (undefined :: MD5Digest))
+
+{-
 
 instance Arbitrary Word8 where
     arbitrary = (arbitrary :: Gen Int) >>= return . fromIntegral
@@ -68,3 +73,4 @@ runTest (T a s) = do
     quickCheck a
 
 runTests = mapM_ runTest tests
+-}

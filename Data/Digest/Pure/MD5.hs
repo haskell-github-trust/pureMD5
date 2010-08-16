@@ -85,7 +85,7 @@ h3 = 0x10325476
 -- | Processes a lazy ByteString and returns the md5 digest.
 --   This is probably what you want.
 md5 :: L.ByteString -> MD5Digest
-md5 = hash
+md5 = flip md5Finalize B.empty . foldl' md5Update md5InitialContext . L.toChunks -- hash
 
 -- | Closes an MD5 context, thus producing the digest.
 md5Finalize :: MD5Context -> B.ByteString -> MD5Digest
@@ -95,8 +95,9 @@ md5Finalize !ctx@(MD5Ctx (MD5Par a b c d) remPrev !totLen) end =
                         putWord8 0x80
                         mapM_ putWord8 (replicate lenZeroPad 0)
                         putWord64le totLen' )
-        in MD5Digest $ mdPartial $ md5Update ctx (B.concat padBS)
+        in MD5Digest $ mdPartial $ md5Update ctx' (B.concat padBS)
     where
+    ctx' = md5Update ctx rem
     rem = B.append remPrev end
     l = B.length rem
     lenZeroPad = if (l + 1) <= blockSizeBytes - 8
