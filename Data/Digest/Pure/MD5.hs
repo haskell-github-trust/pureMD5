@@ -314,4 +314,3 @@ instance Hash MD5Context MD5Digest where
 	initialCtx   = md5InitialContext
 	updateCtx    = md5Update
 	finalize     = md5Finalize
-	strength     = Tagged 24
