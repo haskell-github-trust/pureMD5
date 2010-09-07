@@ -32,6 +32,7 @@ module Data.Digest.Pure.MD5
         , md5Finalize
         ) where
 
+import Data.ByteString.Unsafe (unsafeUseAsCString)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as L
 import Data.ByteString.Internal

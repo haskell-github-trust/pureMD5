@@ -18,6 +18,10 @@ flag LittleEndian
   description: Set to true if the architecture is little endian (uses native Word32 loads instead of bytes + shifts, overall 40% speed-up)
   default: False
 
+flag test
+  description: Build a test program
+  default: false
+
 Library
   Build-Depends: base == 4.*, bytestring >= 0.9 && < 0.10, binary >= 0.4.0 && < 0.6.0, cereal >= 0.2, crypto-api >= 0.0.0.1, tagged
   ghc-options:	-O2 -funfolding-use-threshold66 -funfolding-creation-threshold66 -fexcess-precision -funbox-strict-fields
@@ -25,3 +29,9 @@ Library
   exposed-modules: Data.Digest.Pure.MD5
   if flag(LittleEndian)
     cpp-options: -DLittleEndian
+
+Executable md5Test
+  main-is: Test/main.hs
+  Build-Depends: base, QuickCheck, crypto-api, bytestring, cereal
+  if !flag(test)
+    buildable: False
