@@ -1,4 +1,4 @@
-{-# LANGUAGE BangPatterns, ForeignFunctionInterface, MultiParamTypeClasses #-}
+{-# LANGUAGE BangPatterns, ForeignFunctionInterface, MultiParamTypeClasses, CPP #-}
 -----------------------------------------------------------------------------
 --
 -- Module      : Data.Digest.Pure.MD5
@@ -237,12 +237,14 @@ applyMD5Rounds par@(MD5Par a b c d) w = {-# SCC "applyMD5Rounds" #-}
         {-# INLINE (!!) #-}
 {-# INLINE applyMD5Rounds #-}
 
+#ifdef LittleEndian
+getNthWord n b = inlinePerformIO (unsafeUseAsCString b (flip peekElemOff n . castPtr))
+#else
 getNthWord :: Int -> B.ByteString -> Word32
-getNthWord n = right . G.runGet (do
-                G.uncheckedSkip (n * sizeOf (undefined :: Word32))
-                G.getWord32le)
+getNthWord n = right . G.runGet G.getWord32le . B.drop (n * sizeOf (undefined :: Word32))
   where
   right x = case x of Right y -> y
+#endif
 {-# INLINE getNthWord #-}
 
 infix 9 .<.
