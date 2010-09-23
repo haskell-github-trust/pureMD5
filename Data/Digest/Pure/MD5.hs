@@ -8,14 +8,14 @@
 -- Portability : portable, requires bang patterns and ByteString
 -- Tested with : GHC-6.8.1
 --
--- |To get an MD5 digest of a lazy ByteString (you probably want this):
---   hash = md5 lazyByteString
+-- | It is suggested you use the 'crypto-api' class-based interface to access the MD5 algorithm.
+-- Either rely on type inference or provide an explicit type:
 --
--- Alternativly, for a context that can be further updated/finalized:
---   partialCtx = md5Update md5InitialContext partOfFile
+-- @
+--   hashFileStrict = liftM hash' B.readFile
+--   hashFileLazyBS = liftM hash B.readFile
+-- @
 --
--- And you finialize the context with:
---   hash = md5Finalize partialCtx
 -----------------------------------------------------------------------------
 
 module Data.Digest.Pure.MD5
@@ -25,11 +25,12 @@ module Data.Digest.Pure.MD5
         , MD5Digest
         -- * Static data
         , md5InitialContext
-        , blockSize
         -- * Functions
         , md5
         , md5Update
         , md5Finalize
+	-- * Crypto-API interface
+	, Hash(..)
         ) where
 
 import Data.ByteString.Unsafe (unsafeUseAsCString)
@@ -50,7 +51,7 @@ import Data.Binary.Put
 import qualified Data.Serialize.Get as G
 import qualified Data.Serialize.Put as P
 import qualified Data.Serialize as S
-import Crypto.Classes
+import Crypto.Classes (Hash(..), hash)
 import Data.Tagged
 import Numeric
 
