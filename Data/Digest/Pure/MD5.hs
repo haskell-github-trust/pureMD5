@@ -64,12 +64,12 @@ blockSizeBytesI64 = (fromIntegral blockSizeBytes) :: Int64
 blockSizeBits = (fromIntegral md5BlockSize) :: Word64
 
 -- | The type for intermediate results (from md5Update)
-data MD5Partial = MD5Par !Word32 !Word32 !Word32 !Word32
+data MD5Partial = MD5Par {-# UNPACK #-} !Word32 {-# UNPACK #-} !Word32 {-# UNPACK #-} !Word32 {-# UNPACK #-} !Word32
     deriving (Ord, Eq)
 
 -- | The type for final results.
-data MD5Context = MD5Ctx { mdPartial  :: !MD5Partial,
-                           mdTotalLen :: !Word64 }
+data MD5Context = MD5Ctx { mdPartial  :: {-# UNPACK #-} !MD5Partial,
+                           mdTotalLen :: {-# UNPACK #-} !Word64 }
 
 -- |After finalizing a context, using md5Finalize, a new type
 -- is returned to prevent 're-finalizing' the structure.
@@ -238,7 +238,7 @@ applyMD5Rounds par@(MD5Par a b c d) w = {-# SCC "applyMD5Rounds" #-}
         {-# INLINE (!!) #-}
 {-# INLINE applyMD5Rounds #-}
 
-#ifdef LittleEndian
+#ifdef FastWordExtract
 getNthWord n b = inlinePerformIO (unsafeUseAsCString b (flip peekElemOff n . castPtr))
 #else
 getNthWord :: Int -> B.ByteString -> Word32

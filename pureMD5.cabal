@@ -1,5 +1,5 @@
 name:		pureMD5
-version:	2.1.0.0
+version:	2.1.0.1
 license:	BSD3
 license-file:	LICENSE
 author:		Thomas DuBuisson <thomas.dubuisson@gmail.com>
@@ -14,10 +14,6 @@ cabal-version:	>= 1.6
 tested-with:	GHC == 6.12.1
 extra-source-files: Test/MD5.hs Test/md5test.hs
 
-flag LittleEndian
-  description: Set to true if the architecture is little endian (uses native Word32 loads instead of bytes + shifts, overall 40% speed-up)
-  default: False
-
 flag test
   description: Build a test program
   default: False
@@ -27,8 +23,8 @@ Library
   ghc-options:	-O2 -funfolding-use-threshold66 -funfolding-creation-threshold66 -fexcess-precision -funbox-strict-fields
   hs-source-dirs:
   exposed-modules: Data.Digest.Pure.MD5
-  if flag(LittleEndian)
-    cpp-options: -DLittleEndian
+  if arch(i386) || arch(x86-64)
+    cpp-options: -DFastWordExtract
 
 Executable md5Test
   main-is: Test/main.hs
