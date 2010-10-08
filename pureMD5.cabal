@@ -23,7 +23,7 @@ Library
   ghc-options:	-O2 -funfolding-use-threshold66 -funfolding-creation-threshold66 -fexcess-precision -funbox-strict-fields
   hs-source-dirs:
   exposed-modules: Data.Digest.Pure.MD5
-  if arch(i386) || arch(x86-64)
+  if arch(i386) || arch(x86_64)
     cpp-options: -DFastWordExtract
 
 Executable md5Test
