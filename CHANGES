@@ -1,7 +1,5 @@
-2.1.0.3
-* Fix the .cabal to remove the test build deps unless the test flag is set
-
 2.1.0.2
+* Fix the .cabal to remove the test build deps unless the test flag is set
 * Use "unsafeDrop" for a small performance win.  This should be automaticly recognized by the compiler some day.
 
 2.1.0.1
