@@ -36,6 +36,7 @@ module Data.Digest.Pure.MD5
 import Data.ByteString.Unsafe (unsafeUseAsCString)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as L
+import Data.ByteString.Unsafe (unsafeDrop)
 import Data.ByteString.Internal
 import Data.Bits
 import Data.List
@@ -121,7 +122,7 @@ blockAndDo !ctx bs
   | B.length bs == 0 = ctx
   | otherwise = 
 	let !new = performMD5Update ctx bs
-	in blockAndDo new (B.drop blockSizeBytes bs)
+	in blockAndDo new (unsafeDrop blockSizeBytes bs)
 {-# INLINE blockAndDo #-}
 
 -- Assumes ByteString length == blockSizeBytes, will fold the 

@@ -1,5 +1,5 @@
 name:		pureMD5
-version:	2.1.0.1
+version:	2.1.0.3
 license:	BSD3
 license-file:	LICENSE
 author:		Thomas DuBuisson <thomas.dubuisson@gmail.com>
@@ -28,6 +28,7 @@ Library
 
 Executable md5Test
   main-is: Test/main.hs
-  Build-Depends: base, QuickCheck, crypto-api, bytestring, cereal
+  if flag(test)
+    Build-Depends: base, QuickCheck, crypto-api, bytestring, cereal
   if !flag(test)
     buildable: False
