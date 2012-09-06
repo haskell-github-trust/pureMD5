@@ -1,5 +1,5 @@
 name:		pureMD5
-version:	2.1.2
+version:	2.1.2.1
 license:	BSD3
 license-file:	LICENSE
 author:		Thomas DuBuisson <thomas.dubuisson@gmail.com>
@@ -12,7 +12,7 @@ stability:	stable
 build-type:	Simple
 cabal-version:	>= 1.6
 tested-with:	GHC == 6.12.1
-extra-source-files: Test/MD5.hs Test/md5test.hs
+extra-source-files: Test/MD5.hs
 
 flag test
   description: Build a test program
@@ -20,18 +20,11 @@ flag test
 
 Library
   Build-Depends: base == 4.*, bytestring >= 0.9, binary >= 0.4.0, cereal >= 0.2, crypto-api, tagged
-  ghc-options:	-O2 -funfolding-use-threshold66 -funfolding-creation-threshold66 -fexcess-precision -funbox-strict-fields -fllvm -optlc-O=3 -optlo-inline -optlo-std-compile-opts
+  ghc-options:	-O2 -funfolding-use-threshold66 -funfolding-creation-threshold66 -funbox-strict-fields
   hs-source-dirs:
   exposed-modules: Data.Digest.Pure.MD5
   if arch(i386) || arch(x86_64)
     cpp-options: -DFastWordExtract
-
-Executable md5Test
-  main-is: Test/main.hs
-  if flag(test)
-    Build-Depends: base, QuickCheck, crypto-api, bytestring, cereal
-  if !flag(test)
-    buildable: False
 
 source-repository head
   type:     git
