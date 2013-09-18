@@ -33,18 +33,15 @@ module Data.Digest.Pure.MD5
         , Hash(..)
         ) where
 
-import Data.ByteString.Unsafe (unsafeUseAsCString)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as L
-import Data.ByteString.Unsafe (unsafeDrop)
+import Data.ByteString.Unsafe (unsafeDrop,unsafeUseAsCString)
 import Data.ByteString.Internal
 import Data.Bits
 import Data.List
-import Data.Int (Int64)
 import Data.Word
 import Foreign.Storable
-import Foreign.Ptr
-import Foreign.ForeignPtr
+import Foreign.Ptr (castPtr)
 import Data.Binary
 import Data.Binary.Get
 import Data.Binary.Put
@@ -52,6 +49,7 @@ import qualified Data.Serialize.Get as G
 import qualified Data.Serialize.Put as P
 import qualified Data.Serialize as S
 import Crypto.Classes (Hash(..), hash)
+import Control.Monad (replicateM_)
 import Data.Tagged
 import Numeric
 
@@ -59,9 +57,8 @@ import Numeric
 md5BlockSize :: Int
 md5BlockSize = 512
 
+blockSizeBytes :: Int
 blockSizeBytes = md5BlockSize `div` 8
-blockSizeBytesI64 = (fromIntegral blockSizeBytes) :: Int64
-blockSizeBits = (fromIntegral md5BlockSize) :: Word64
 
 -- | The type for intermediate results (from md5Update)
 data MD5Partial = MD5Par {-# UNPACK #-} !Word32 {-# UNPACK #-} !Word32 {-# UNPACK #-} !Word32 {-# UNPACK #-} !Word32
@@ -78,6 +75,8 @@ data MD5Digest = MD5Digest MD5Partial deriving (Eq, Ord)
 -- | The initial context to use when calling md5Update for the first time
 md5InitialContext :: MD5Context
 md5InitialContext = MD5Ctx (MD5Par h0 h1 h2 h3) 0
+
+h0,h1,h2,h3 :: Word32
 h0 = 0x67452301
 h1 = 0xEFCDAB89
 h2 = 0x98BADCFE
@@ -90,11 +89,11 @@ md5 = hash
 
 -- | Closes an MD5 context, thus producing the digest.
 md5Finalize :: MD5Context -> B.ByteString -> MD5Digest
-md5Finalize !ctx@(MD5Ctx par@(MD5Par a b c d) !totLen) end =
+md5Finalize (MD5Ctx par !totLen) end =
         let totLen' = 8*(totLen + fromIntegral l) :: Word64
             padBS = P.runPut $ do P.putByteString end
                                   P.putWord8 0x80
-                                  mapM_ P.putWord8 (replicate lenZeroPad 0)
+                                  replicateM_ lenZeroPad (P.putWord8 0)
                                   P.putWord64le totLen'
         in MD5Digest $ blockAndDo par padBS
     where
@@ -126,15 +125,16 @@ blockAndDo !ctx bs
 -- Assumes ByteString length == blockSizeBytes, will fold the
 -- context across calls to applyMD5Rounds.
 performMD5Update :: MD5Partial -> B.ByteString -> MD5Partial
-performMD5Update !par@(MD5Par !a !b !c !d) !bs =
+performMD5Update par@(MD5Par !a !b !c !d) !bs =
         let MD5Par a' b' c' d' = applyMD5Rounds par bs
         in MD5Par (a' + a) (b' + b) (c' + c) (d' + d)
 {-# INLINE performMD5Update #-}
 
+isAligned :: ByteString -> Bool
 isAligned (PS _ off _) = off `rem` 4 == 0
 
 applyMD5Rounds :: MD5Partial -> ByteString -> MD5Partial
-applyMD5Rounds par@(MD5Par a b c d) w = {-# SCC "applyMD5Rounds" #-}
+applyMD5Rounds (MD5Par a b c d) w = {-# SCC "applyMD5Rounds" #-}
         let -- Round 1
             !r0  = ff  a  b  c  d   (w!!0)  7  3614090360
             !r1  = ff  d r0  b  c   (w!!1)  12 3905402710
@@ -247,10 +247,6 @@ getNthWord n = right . G.runGet G.getWord32le . B.drop (n * sizeOf (undefined ::
 #endif
 {-# INLINE getNthWord #-}
 
-infix 9 .<.
-(.<.) :: Word8 -> Int -> Word32
-(.<.) w i = (fromIntegral w) `shiftL` i
-
 ----- Some quick and dirty instances follow -----
 
 instance Show MD5Digest where
@@ -258,11 +254,12 @@ instance Show MD5Digest where
 
 instance Show MD5Partial where
   show (MD5Par a b c d) =
-    let bs = runPut $ putWord32be d >> putWord32be c >> putWord32be b >> putWord32be a
-    in foldl' (\str w -> let c = showHex w str
-                         in if length c < length str + 2
-                                 then '0':c
-                                else c) "" (L.unpack bs)
+    let bs = runPut $ putWord32be d >> putWord32be c >>
+                      putWord32be b >> putWord32be a
+    in foldl' (\str w -> let cx = showHex w str
+                         in if length cx < length str + 2
+                                 then '0':cx
+                                else cx) "" (L.unpack bs)
 
 instance Binary MD5Digest where
     put (MD5Digest p) = put p
