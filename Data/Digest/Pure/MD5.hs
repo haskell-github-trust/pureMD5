@@ -19,7 +19,7 @@
 -----------------------------------------------------------------------------
 
 module Data.Digest.Pure.MD5
-	(
+        (
         -- * Types
           MD5Context
         , MD5Digest
@@ -29,8 +29,8 @@ module Data.Digest.Pure.MD5
         , md5
         , md5Update
         , md5Finalize
-	-- * Crypto-API interface
-	, Hash(..)
+        -- * Crypto-API interface
+        , Hash(..)
         ) where
 
 import Data.ByteString.Unsafe (unsafeUseAsCString)
@@ -111,16 +111,16 @@ md5Update :: MD5Context -> B.ByteString -> MD5Context
 md5Update ctx bs
   | B.length bs `rem` blockSizeBytes /= 0 = error "Invalid use of hash update routine (see crypto-api Hash class semantics)"
   | otherwise =
-	let bs' = if isAligned bs then bs else B.copy bs -- copying has been measured as a net win on my x86 system
-	    new =  blockAndDo (mdPartial ctx) bs'
-	in ctx { mdPartial = new, mdTotalLen = mdTotalLen ctx + fromIntegral (B.length bs) }
+        let bs' = if isAligned bs then bs else B.copy bs -- copying has been measured as a net win on my x86 system
+            new =  blockAndDo (mdPartial ctx) bs'
+        in ctx { mdPartial = new, mdTotalLen = mdTotalLen ctx + fromIntegral (B.length bs) }
 
 blockAndDo :: MD5Partial -> B.ByteString -> MD5Partial
 blockAndDo !ctx bs
   | B.length bs == 0 = ctx
   | otherwise =
-	let !new = performMD5Update ctx bs
-	in blockAndDo new (unsafeDrop blockSizeBytes bs)
+        let !new = performMD5Update ctx bs
+        in blockAndDo new (unsafeDrop blockSizeBytes bs)
 {-# INLINE blockAndDo #-}
 
 -- Assumes ByteString length == blockSizeBytes, will fold the
@@ -128,7 +128,7 @@ blockAndDo !ctx bs
 performMD5Update :: MD5Partial -> B.ByteString -> MD5Partial
 performMD5Update !par@(MD5Par !a !b !c !d) !bs =
         let MD5Par a' b' c' d' = applyMD5Rounds par bs
-	in MD5Par (a' + a) (b' + b) (c' + c) (d' + d)
+        in MD5Par (a' + a) (b' + b) (c' + c) (d' + d)
 {-# INLINE performMD5Update #-}
 
 isAligned (PS _ off _) = off `rem` 4 == 0
@@ -298,16 +298,21 @@ instance S.Serialize MD5Context where
                  return $ MD5Ctx p l
 
 instance S.Serialize MD5Partial where
-	put (MD5Par a b c d) = P.putWord32le a >> P.putWord32le b >> P.putWord32le c >> P.putWord32le d
-	get = G.getWord32le >>= (\a ->
-              G.getWord32le >>= (\b ->
-                  G.getWord32le >>= (\c ->
-                      G.getWord32le >>= (\d ->
-                          return (MD5Par a b c d)))))
+        put (MD5Par a b c d) = do
+            P.putWord32le a
+            P.putWord32le b
+            P.putWord32le c
+            P.putWord32le d
+        get = do
+            a <- G.getWord32le
+            b <- G.getWord32le
+            c <- G.getWord32le
+            d <- G.getWord32le
+            return (MD5Par a b c d)
 
 instance Hash MD5Context MD5Digest where
-	outputLength = Tagged 128
-	blockLength  = Tagged 512
-	initialCtx   = md5InitialContext
-	updateCtx    = md5Update
-	finalize     = md5Finalize
+        outputLength = Tagged 128
+        blockLength  = Tagged 512
+        initialCtx   = md5InitialContext
+        updateCtx    = md5Update
+        finalize     = md5Finalize
