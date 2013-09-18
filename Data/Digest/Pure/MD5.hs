@@ -45,7 +45,6 @@ import Data.Word
 import Foreign.Storable
 import Foreign.Ptr
 import Foreign.ForeignPtr
-import System.IO
 import Data.Binary
 import Data.Binary.Get
 import Data.Binary.Put
@@ -93,11 +92,10 @@ md5 = hash
 md5Finalize :: MD5Context -> B.ByteString -> MD5Digest
 md5Finalize !ctx@(MD5Ctx par@(MD5Par a b c d) !totLen) end =
         let totLen' = 8*(totLen + fromIntegral l) :: Word64
-            padBS = P.runPut ( do
-			P.putByteString end
-                        P.putWord8 0x80
-                        mapM_ P.putWord8 (replicate lenZeroPad 0)
-                        P.putWord64le totLen' )
+            padBS = P.runPut $ do P.putByteString end
+                                  P.putWord8 0x80
+                                  mapM_ P.putWord8 (replicate lenZeroPad 0)
+                                  P.putWord64le totLen'
         in MD5Digest $ blockAndDo par padBS
     where
     l = B.length end
@@ -112,7 +110,7 @@ md5Finalize !ctx@(MD5Ctx par@(MD5Par a b c d) !totLen) end =
 md5Update :: MD5Context -> B.ByteString -> MD5Context
 md5Update ctx bs
   | B.length bs `rem` blockSizeBytes /= 0 = error "Invalid use of hash update routine (see crypto-api Hash class semantics)"
-  | otherwise = 
+  | otherwise =
 	let bs' = if isAligned bs then bs else B.copy bs -- copying has been measured as a net win on my x86 system
 	    new =  blockAndDo (mdPartial ctx) bs'
 	in ctx { mdPartial = new, mdTotalLen = mdTotalLen ctx + fromIntegral (B.length bs) }
@@ -120,12 +118,12 @@ md5Update ctx bs
 blockAndDo :: MD5Partial -> B.ByteString -> MD5Partial
 blockAndDo !ctx bs
   | B.length bs == 0 = ctx
-  | otherwise = 
+  | otherwise =
 	let !new = performMD5Update ctx bs
 	in blockAndDo new (unsafeDrop blockSizeBytes bs)
 {-# INLINE blockAndDo #-}
 
--- Assumes ByteString length == blockSizeBytes, will fold the 
+-- Assumes ByteString length == blockSizeBytes, will fold the
 -- context across calls to applyMD5Rounds.
 performMD5Update :: MD5Partial -> B.ByteString -> MD5Partial
 performMD5Update !par@(MD5Par !a !b !c !d) !bs =
@@ -259,7 +257,7 @@ instance Show MD5Digest where
     show (MD5Digest h) = show h
 
 instance Show MD5Partial where
-  show (MD5Par a b c d) = 
+  show (MD5Par a b c d) =
     let bs = runPut $ putWord32be d >> putWord32be c >> putWord32be b >> putWord32be a
     in foldl' (\str w -> let c = showHex w str
                          in if length c < length str + 2
@@ -301,11 +299,11 @@ instance S.Serialize MD5Context where
 
 instance S.Serialize MD5Partial where
 	put (MD5Par a b c d) = P.putWord32le a >> P.putWord32le b >> P.putWord32le c >> P.putWord32le d
-	get = do a <- G.getWord32le
-		 b <- G.getWord32le
-		 c <- G.getWord32le
-		 d <- G.getWord32le
-		 return $ MD5Par a b c d
+	get = G.getWord32le >>= (\a ->
+              G.getWord32le >>= (\b ->
+                  G.getWord32le >>= (\c ->
+                      G.getWord32le >>= (\d ->
+                          return (MD5Par a b c d)))))
 
 instance Hash MD5Context MD5Digest where
 	outputLength = Tagged 128
