@@ -1,12 +1,14 @@
-{-# LANGUAGE BangPatterns, ForeignFunctionInterface, MultiParamTypeClasses, CPP #-}
+{-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE CPP #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 -----------------------------------------------------------------------------
 --
 -- Module      : Data.Digest.Pure.MD5
 -- License     : BSD3
 -- Maintainer  : Thomas.DuBuisson@gmail.com
 -- Stability   : experimental
--- Portability : portable, requires bang patterns and ByteString
--- Tested with : GHC-6.8.1
+-- Portability : portable
+-- Tested with : GHC-7.6.3
 --
 -- | It is suggested you use the 'crypto-api' class-based interface to access the MD5 algorithm.
 -- Either rely on type inference or provide an explicit type:
