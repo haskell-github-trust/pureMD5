@@ -14,8 +14,8 @@
 -- Either rely on type inference or provide an explicit type:
 --
 -- @
---   hashFileStrict = liftM hash' B.readFile
---   hashFileLazyBS = liftM hash B.readFile
+--   hashFileStrict = liftM hash' . B.readFile
+--   hashFileLazyBS = liftM hash . B.readFile
 -- @
 --
 -----------------------------------------------------------------------------
