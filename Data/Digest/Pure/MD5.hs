@@ -241,13 +241,13 @@ applyMD5Rounds (MD5Par a b c d) w = {-# SCC "applyMD5Rounds" #-}
 
 #ifdef FastWordExtract
 getNthWord n b = inlinePerformIO (unsafeUseAsCString b (flip peekElemOff n . castPtr))
+{-# INLINE getNthWord #-}
 #else
 getNthWord :: Int -> B.ByteString -> Word32
 getNthWord n = right . G.runGet G.getWord32le . B.drop (n * sizeOf (undefined :: Word32))
   where
   right x = case x of Right y -> y
 #endif
-{-# INLINE getNthWord #-}
 
 ----- Some quick and dirty instances follow -----
 
