@@ -54,6 +54,9 @@ import Crypto.Classes (Hash(..), hash)
 import Control.Monad (replicateM_)
 import Data.Tagged
 import Numeric
+#ifdef FastWordExtract
+import System.IO.Unsafe (unsafePerformIO)
+#endif
 
 -- | Block size in bits
 md5BlockSize :: Int
@@ -240,7 +243,7 @@ applyMD5Rounds (MD5Par a b c d) w = {-# SCC "applyMD5Rounds" #-}
 {-# INLINE applyMD5Rounds #-}
 
 #ifdef FastWordExtract
-getNthWord n b = inlinePerformIO (unsafeUseAsCString b (flip peekElemOff n . castPtr))
+getNthWord n b = unsafePerformIO (unsafeUseAsCString b (flip peekElemOff n . castPtr))
 {-# INLINE getNthWord #-}
 #else
 getNthWord :: Int -> B.ByteString -> Word32
