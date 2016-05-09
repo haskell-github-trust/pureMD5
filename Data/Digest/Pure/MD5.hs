@@ -31,6 +31,7 @@ module Data.Digest.Pure.MD5
         , md5
         , md5Update
         , md5Finalize
+        , md5DigestBytes
         -- * Crypto-API interface
         , Hash(..)
         ) where
@@ -39,6 +40,9 @@ import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as L
 import Data.ByteString.Unsafe (unsafeDrop,unsafeUseAsCString)
 import Data.ByteString.Internal
+#if MIN_VERSION_binary(0,8,3)
+import Data.ByteString.Builder.Extra as B
+#endif
 import Data.Bits
 import Data.List
 import Data.Word
@@ -252,19 +256,42 @@ getNthWord n = right . G.runGet G.getWord32le . B.drop (n * sizeOf (undefined ::
   right x = case x of Right y -> y
 #endif
 
+-- | The raw bytes of an 'MD5Digest'. It is always 16 bytes long.
+--
+-- You can also use the 'Binary' or 'S.Serialize' instances to output the raw
+-- bytes. Alternatively you can use 'show' to prodce the standard hex
+-- representation.
+--
+md5DigestBytes :: MD5Digest -> B.ByteString
+md5DigestBytes (MD5Digest h) = md5PartialBytes h
+
+md5PartialBytes :: MD5Partial -> B.ByteString
+md5PartialBytes =
+    toBs . (put :: MD5Partial -> Put)
+  where
+    toBs :: Put -> B.ByteString
+#if MIN_VERSION_binary(0,8,3)
+    -- with later binary versions we can control the buffer size precisely:
+    toBs = L.toStrict
+         . B.toLazyByteStringWith (B.untrimmedStrategy 16 0) L.empty
+         . execPut
+#else
+    toBs = B.concat . L.toChunks . runPut
+    -- note L.toStrict is only in newer bytestring versions
+#endif
+
 ----- Some quick and dirty instances follow -----
 
 instance Show MD5Digest where
     show (MD5Digest h) = show h
 
 instance Show MD5Partial where
-  show (MD5Par a b c d) =
-    let bs = runPut $ putWord32be d >> putWord32be c >>
-                      putWord32be b >> putWord32be a
+  show md5par =
+    let bs = md5PartialBytes md5par
     in foldl' (\str w -> let cx = showHex w str
                          in if length cx < length str + 2
                                  then '0':cx
-                                else cx) "" (L.unpack bs)
+                                else cx) "" (B.unpack (B.reverse bs))
 
 instance Binary MD5Digest where
     put (MD5Digest p) = put p
