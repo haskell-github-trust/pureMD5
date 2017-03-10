@@ -92,7 +92,8 @@ h2 = 0x98BADCFE
 h3 = 0x10325476
 
 -- | Processes a lazy ByteString and returns the md5 digest.
---   This is probably what you want.
+--   This is probably what you want. You can use 'show' to produce the standard hex
+-- representation.
 md5 :: L.ByteString -> MD5Digest
 md5 = hash
 
@@ -259,7 +260,7 @@ getNthWord n = right . G.runGet G.getWord32le . B.drop (n * sizeOf (undefined ::
 -- | The raw bytes of an 'MD5Digest'. It is always 16 bytes long.
 --
 -- You can also use the 'Binary' or 'S.Serialize' instances to output the raw
--- bytes. Alternatively you can use 'show' to prodce the standard hex
+-- bytes. Alternatively you can use 'show' to produce the standard hex
 -- representation.
 --
 md5DigestBytes :: MD5Digest -> B.ByteString
