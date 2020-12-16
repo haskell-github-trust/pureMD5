@@ -141,7 +141,15 @@ performMD5Update par@(MD5Par !a !b !c !d) !bs =
 {-# INLINE performMD5Update #-}
 
 isAligned :: ByteString -> Bool
+#if !MIN_VERSION_bytestring(0,11,0)
 isAligned (PS _ off _) = off `rem` 4 == 0
+#else
+isAligned = const True
+-- This is semantically equivalent to the definition above, because
+-- in bytestring-0.11 offset is always 0. Note that neither definition checks
+-- that a pointer (the first field of 'PS') is aligned. Anyways 'isAligned'
+-- is used for optimization purposes only and does not affect correctness.
+#endif
 
 applyMD5Rounds :: MD5Partial -> ByteString -> MD5Partial
 applyMD5Rounds (MD5Par a b c d) w = {-# SCC "applyMD5Rounds" #-}
