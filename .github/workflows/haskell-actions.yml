@@ -35,9 +35,6 @@ jobs:
           for constraint in $(git log "--format=%(trailers:key=New-Versions,valueonly=true)" $GITHUB_HEAD_REF -1)
             do echo "constraints: $constraint" >> cabal.project
           done
-
-      - name: Show cabal.project
-        run: |
           cat cabal.project
 
       - name: Configure the build
