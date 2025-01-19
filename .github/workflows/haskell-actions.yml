@@ -37,7 +37,7 @@ jobs:
           if [ ! -f cabal.project ]
             then echo 'packages: .' > cabal.project
           fi
-          for constraint in $(git log "--format=%(trailers:key=New-Versions,valueonly=true)" $GITHUB_HEAD_REF -1)
+          for constraint in $(git log "--format=%(trailers:key=New-Versions,valueonly=true)" refs/heads/$GITHUB_HEAD_REF -1 --)
             do echo "constraints: $constraint" >> cabal.project
           done
           cat cabal.project
