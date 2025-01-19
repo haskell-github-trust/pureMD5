@@ -32,7 +32,7 @@ jobs:
       - name: Extract New-Versions git trailer from Renovate
         if: ${{ github.event_name == 'pull_request' }}
         env:
-          GITHUB_SHA: "{{ github.sha }}"
+          GITHUB_SHA: "{{ github.event.pull_request.head.sha }}"
         run: |
           if [ ! -f cabal.project ]
             then echo 'packages: .' > cabal.project
