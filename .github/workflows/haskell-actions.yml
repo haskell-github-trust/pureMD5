@@ -27,11 +27,12 @@ jobs:
           cabal-update: true
 
       - name: Extract New-Versions git trailer from Renovate
+        if: env.GITHUB_HEAD_REF != null
         run: |
           if [ ! -f cabal.project ]
             then echo 'packages: .' > cabal.project
           fi
-          for constraint in $(git log "--format=%(trailers:key=New-Versions,valueonly=true)" -1)
+          for constraint in $(git log "--format=%(trailers:key=New-Versions,valueonly=true)" $GITHUB_HEAD_REF -1)
             do echo "constraints: $constraint" >> cabal.project
           done
 
