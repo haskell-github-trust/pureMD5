@@ -27,7 +27,9 @@ jobs:
           cabal-update: true
 
       - name: Extract New-Versions git trailer from Renovate
-        if: env.GITHUB_HEAD_REF != null
+        if: ${{ github.event_name == 'pull_request' }}
+        env:
+          GITHUB_HEAD_REF: {{ github.head_ref }}
         run: |
           if [ ! -f cabal.project ]
             then echo 'packages: .' > cabal.project
