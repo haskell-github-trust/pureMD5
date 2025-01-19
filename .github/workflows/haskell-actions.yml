@@ -37,6 +37,8 @@ jobs:
           if [ ! -f cabal.project ]
             then echo 'packages: .' > cabal.project
           fi
+          echo $GITHUB_SHA
+          git show $GITHUB_SHA
           for constraint in $(git log "--format=%(trailers:key=New-Versions,valueonly=true)" $GITHUB_SHA -1 --)
             do echo "constraints: $constraint" >> cabal.project
           done
