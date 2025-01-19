@@ -17,6 +17,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          # 0 indicates all history for all branches and tags
+          fetch-depth: 0
 
       - name: Set up GHC ${{ matrix.ghc-version }}
         uses: haskell-actions/setup@v2
@@ -27,16 +30,18 @@ jobs:
           cabal-update: true
 
       - name: Extract New-Versions git trailer from Renovate
+        if: ${{ github.event_name == 'pull_request' }}
+        env:
+          GITHUB_SHA: "{{ github.event.pull_request.head.sha }}"
         run: |
           if [ ! -f cabal.project ]
             then echo 'packages: .' > cabal.project
           fi
-          for constraint in $(git log "--format=%(trailers:key=New-Versions,valueonly=true)" -1)
+          echo $GITHUB_SHA
+          git show $GITHUB_SHA
+          for constraint in $(git log "--format=%(trailers:key=New-Versions,valueonly=true)" ${GITHUB_SHA}^1 ${GITHUB_SHA}^2)
             do echo "constraints: $constraint" >> cabal.project
           done
-
-      - name: Show cabal.project
-        run: |
           cat cabal.project
 
       - name: Configure the build
