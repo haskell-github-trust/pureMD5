@@ -32,12 +32,12 @@ jobs:
       - name: Extract New-Versions git trailer from Renovate
         if: ${{ github.event_name == 'pull_request' }}
         env:
-          GITHUB_HEAD_REF: "{{ github.head_ref }}"
+          GITHUB_SHA: "{{ github.sha }}"
         run: |
           if [ ! -f cabal.project ]
             then echo 'packages: .' > cabal.project
           fi
-          for constraint in $(git log "--format=%(trailers:key=New-Versions,valueonly=true)" refs/heads/$GITHUB_HEAD_REF -1 --)
+          for constraint in $(git log "--format=%(trailers:key=New-Versions,valueonly=true)" $GITHUB_SHA -1 --)
             do echo "constraints: $constraint" >> cabal.project
           done
           cat cabal.project
