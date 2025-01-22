@@ -20,7 +20,7 @@ flag test
 
 Library
   Build-Depends:
-    , base >=4.18 && <4.21
+    , base >=4.18 && <4.22
     , bytestring >=0.11 && <0.13
     , binary >=0.8.9 && <0.9
     , cereal >=0.5.8.3 && <0.6
