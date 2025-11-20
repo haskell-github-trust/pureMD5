@@ -16,7 +16,7 @@ jobs:
         ghc-version: ['9.6.6']
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           # 0 indicates all history for all branches and tags
           fetch-depth: 0
